@@ -1,0 +1,13 @@
+{% block container %}
+<link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+<form action="">
+    <input type="text" name="userName">
+    
+</form>
+<a href="{{ url_for('read')}}"><div id="mainButton">Sign Up</div></a>
+<a href="{{ url_for('create')}}"><div id="mainButton">Loogin</div></a>
+<div>Hello</div>
+{% endblock %}

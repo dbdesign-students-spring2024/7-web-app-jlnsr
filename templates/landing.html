@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block container %}
+<link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+<h2>Welcome {{username}}!</h2>
+<a href="{{ url_for('read')}}"><div id="mainButton">See all my items</div></a>
+<a href="{{ url_for('create')}}"><div id="mainButton">Add an item</div></a>
+{% endblock %}

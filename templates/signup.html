@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Sign-Up</title>
+        <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+        />
+    </head>
+    <body>
+        <div class="container">
+        <head>
+            <h1>Sign-Up!</h1>
+        </head>
+        <main>
+        <form method="POST" action="{{ url_for('create_user') }}">
+            <p>Enter a Username:<hr><input type="text" id="fusername" name="fusername"/><br/></p>
+            <p>Create a Password:<hr><input type="text" id="fpassword" name="fpassword"/><br/></p>
+            <p>Choose a shape:<hr><select id="fshape" name="fshape">
+                <option value="square">Square</option>
+                <option value="diamond">Diamond</option>
+                <option value="circle">Circle</option>
+                <option value="triangle">Triangle</option>
+                <option value="hexagon">Hexagon</option>
+            </select></p>
+            <p>Choose a color:<hr><select id="fcolor" name="fcolor">
+                <option value="green">Green</option>
+                <option value="red">Red</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+                <option value="orange">Orange</option>
+                <option value="purple">Purple</option>
+            </select></p><hr>
+            <p>
+                <input type="submit" name="post-btn" value="Create Account" />
+            </p>
+        </form>
+        </main>
+        </div>
+    </body>
+</html>

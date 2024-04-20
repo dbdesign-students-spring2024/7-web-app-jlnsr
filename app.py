@@ -4,14 +4,10 @@ import os
 import sys
 import subprocess
 import datetime
+#may help with debugging
+import cgitb; cgitb.enable()
 
 from flask import Flask, render_template, request, redirect, url_for, make_response
-
-# import logging
-import sentry_sdk
-from sentry_sdk.integrations.flask import (
-    FlaskIntegration,
-)  # delete this if not using sentry.io
 
 # from markupsafe import escape
 import pymongo
@@ -22,22 +18,6 @@ from dotenv import load_dotenv
 # load credentials and configuration options from .env file
 # if you do not yet have a file named .env, make one based on the template in env.example
 load_dotenv(override=True)  # take environment variables from .env.
-
-# initialize Sentry for help debugging... this requires an account on sentrio.io
-# you will need to set the SENTRY_DSN environment variable to the value provided by Sentry
-# delete this if not using sentry.io
-sentry_sdk.init(
-    dsn=os.getenv("SENTRY_DSN"),
-    # enable_tracing=True,
-    # Set traces_sample_rate to 1.0 to capture 100% of transactions for performance monitoring.
-    traces_sample_rate=1.0,
-    # Set profiles_sample_rate to 1.0 to profile 100% of sampled transactions.
-    # We recommend adjusting this value in production.
-    profiles_sample_rate=1.0,
-    integrations=[FlaskIntegration()],
-    traces_sample_rate=1.0,
-    send_default_pii=True,
-)
 
 # instantiate the app using sentry for debugging
 app = Flask(__name__)
@@ -57,13 +37,12 @@ except ConnectionFailure as e:
     # catch any database errors
     # the ping command failed, so the connection is not available.
     print(" * MongoDB connection error:", e)  # debug
-    sentry_sdk.capture_exception(e)  # send the error to sentry.io. delete if not using
     sys.exit(1)  # this is a catastrophic error, so no reason to continue to live
 
+#define global variables
+current_user = ""
 
 # set up the routes
-
-
 @app.route("/")
 def home():
     """
@@ -72,14 +51,94 @@ def home():
     """
     return render_template("index.html")
 
+@app.route("/signup") #FROM the home(index.html) page
+def signup():
+    """
+    Displays a form users can fill out to sign up
+    """
+    return render_template("signup.html")
 
+@app.route("/signup", methods=["POST"])
+def create_user():
+    """
+    Route for POST requests to the signup page
+    Accepts the form submission data for a new user in the database
+    """
+    global current_user 
+    #this allows access to the USERNAME value in the form OUTSIDE of the HTTP context
+    #i.e. within the this app.py file
+    username = request.form["fusername"]
+    current_user = username #this will be useful for keeping track of each user's content
+    password = request.form["fpassword"]
+    shape = request.form["fshape"]
+    color = request.form["fcolor"]
+
+    # create a new document with the data the user entered
+    doc = {"username": username, "password": password, "shape": shape, "color": color}
+
+    query = db.exampleapp.find_one({"username":username})
+    #check to see if this username ALREADY exists
+    if query is None:
+        # if NOT:
+        #1) create a NEW collection for USERNAME
+        db.create_collection(username)
+        #2) add this USER to the 'users' collection
+        db.exampleapp.insert_one(doc) 
+        #3) go to main LANDING page
+        return render_template("landing.html",username=username)
+    
+    #return to home page(index.html) if it does exist
+    return redirect(url_for("home"))
+       
+@app.route("/login")
+def login():
+    """
+    Displays the login form
+    """
+    return render_template("login.html")
+
+@app.route("/login", methods=["POST"])
+def authenticate():
+    """
+    Route for the POST request to the login page
+    Athenticates the users credentials
+    """
+    global current_user 
+    #allows access to the USERNAME value in the form OUTSIDE of the HTTP context
+    #i.e. within the this app.py file
+    username = request.form["fusername"]
+    current_user = username
+    password = request.form["fpassword"]
+
+    #check to see if the credentials match with an existing account
+    query = db.exampleapp.find_one({ 
+        "$and": [
+            {"username":username},{"password":password}
+        ] 
+    })
+
+    if query is not None:
+        #if a result is returned
+        #redirect to landing page 
+        return render_template("landing.html",username=username)
+    #otherwise return to home page       
+    return redirect(url_for("home"))
+@app.route("/landing")
+def landing():
+    global current_user
+    username = current_user
+    """
+    Route for the home page.
+    Simply returns to the browser the content of the index.html file located in the templates folder.
+    """
+    return render_template("landing.html",username=current_user)
 @app.route("/read")
 def read():
     """
     Route for GET requests to the read page.
     Displays some information for the user with links to other pages.
     """
-    docs = db.exampleapp.find({}).sort(
+    docs = db[current_user].find({}).sort(
         "created_at", -1
     )  # sort in descending order of created_at timestamp
     return render_template("read.html", docs=docs)  # render the read template
@@ -95,17 +154,18 @@ def create():
 
 
 @app.route("/create", methods=["POST"])
-def create_post():
+def create_to_do_item():
     """
     Route for POST requests to the create page.
     Accepts the form submission data for a new document and saves the document to the database.
     """
-    name = request.form["fname"]
-    message = request.form["fmessage"]
+    title = request.form["ftitle"]
+    category = request.form["fcategory"]
+    description = request.form["fdescription"]
 
     # create a new document with the data the user entered
-    doc = {"name": name, "message": message, "created_at": datetime.datetime.utcnow()}
-    db.exampleapp.insert_one(doc)  # insert a new document
+    doc = {"title": title, "category": category, "description": description, "created_at": datetime.datetime.utcnow()}
+    db[current_user].insert_one(doc)  # insert a new document
 
     return redirect(
         url_for("read")
@@ -137,11 +197,15 @@ def edit_post(mongoid):
     mongoid (str): The MongoDB ObjectId of the record to be edited.
     """
     name = request.form["fname"]
+    shape = request.form["fshape"]
+    color = request.form["fcolor"]
     message = request.form["fmessage"]
 
     doc = {
         # "_id": ObjectId(mongoid),
         "name": name,
+        "shape": shape,
+        "color": color,
         "message": message,
         "created_at": datetime.datetime.utcnow(),
     }

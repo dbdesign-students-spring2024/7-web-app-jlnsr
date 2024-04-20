@@ -1,3 +1,17 @@
+<!DOCTYPE html>
+{% extends 'base.html' %}
+
+{% block container %}
+<link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+<h2>Log-in or Create an account if you don't already have one!</h2>
+<a href="{{ url_for('signup')}}"><div id="mainButton">Sign Up</div></a>
+<a href="{{ url_for('login')}}"><div id="mainButton">Log In</div></a>
+{% endblock %}
+
+<!--
 <html>
   <head>
     <title>Home page</title>
@@ -15,7 +29,6 @@
         <div class="icon, school" style="width: 20px; height: 20px;"></div>
         <div class="icon, work" style="width: 15px; height: 15px;"></div>
       </div>
-      <h2 id="homeBanner">It takes good organization for success!</h2>
       <main>
         <h2>Log-in or Create an account if you don't already have one!</h2>
         <a href="{{ url_for('signup')}}"><div id="mainButton">Sign Up</div></a>
@@ -31,3 +44,4 @@
     </div>
   </body>
 </html>
+-->
